@@ -1,2 +1,2 @@
-class():
-  blag1
+import pygame
+from pygame import locals *

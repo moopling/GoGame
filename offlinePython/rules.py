@@ -1,5 +1,4 @@
 
-
 def play(state,(x,y)):
     output = state.board.play(state.player,state.captured,(x,y))
     if output[0] == 0:

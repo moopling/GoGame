@@ -6,31 +6,26 @@ red      = ( 255,   0,   0)
 blue = (0,0,255)
 
 def drawBoard(n,screen,screenHeight):
-  delta = screenHeight/n
-	for i in range(n):
-		pygame.draw.line(screen, (0,0,0),[(i+0.5)*delta,0.5*delta],[(i+0.5)*delta,(n-0.5)*delta])
-		pygame.draw.line(screen, (0,0,0),[0.5*delta,(i+0.5)*delta],[(n-0.5)*delta,(i+0.5)*delta])
+    delta = screenHeight/n
+    for i in range(n):
+        pygame.draw.line(screen, (0,0,0),[(i+0.5)*delta,0.5*delta],[(i+0.5)*delta,(n-0.5)*delta])
+        pygame.draw.line(screen, (0,0,0),[0.5*delta,(i+0.5)*delta],[(n-0.5)*delta,(i+0.5)*delta])
 
 
 def drawStones(n,screen,screenHeight,board):
-        stones = board.output()
-        delta = screenHeight/n
-        for x in range(n):
-            for y in range(n):
-                    if stones[x][y] == "Black":
-                            pygame.draw.circle(screen,black,(int((x+0.5)*delta),int((y+0.5)*delta)),int(delta*0.4))
-                    if stones[x][y] == "White":
-                            pygame.draw.circle(screen,white,(int((x+0.5)*delta),int((y+0.5)*delta)),int(delta*0.4))
+    stones = board.output()
+    delta = screenHeight/n
+    for x in range(n):
+        for y in range(n):
+            if stones[x][y] == "Black":
+                pygame.draw.circle(screen,black,(int((x+0.5)*delta),int((y+0.5)*delta)),int(delta*0.4))
+            if stones[x][y] == "White":
+                pygame.draw.circle(screen,white,(int((x+0.5)*delta),int((y+0.5)*delta)),int(delta*0.4))
                   
-	
+    
 import pygame
 def draw(screen,state,pos,buttons):
-        
- 
 
-
-
-  
         screen.fill(background)
 
 
@@ -38,11 +33,11 @@ def draw(screen,state,pos,buttons):
         drawStones(state.n,screen,state.screenHeight,state.board)
 
         for b in buttons:
-                pygame.draw.rect(screen,b.colour,[b.pos[0],b.pos[1],b.size[0],b.size[1]])
+            pygame.draw.rect(screen,b.colour,[b.pos[0],b.pos[1],b.size[0],b.size[1]])
    
     
         if state.player == "Black":
-                colour = black
+            colour = black
         else: colour = white
     
         pygame.draw.circle(screen,colour,pos,5)
@@ -69,6 +64,6 @@ def draw(screen,state,pos,buttons):
         screen.blit(renderedText, [state.screenHeight+25,60])
 
         for b in buttons:
-                renderedText = font.render(b.text,True,black)
-                screen.blit(renderedText, [b.pos[0]+5,b.pos[1]+int(0.5*b.size[1])-13])
+            renderedText = font.render(b.text,True,black)
+            screen.blit(renderedText, [b.pos[0]+5,b.pos[1]+int(0.5*b.size[1])-13])
 

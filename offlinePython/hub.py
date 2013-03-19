@@ -42,117 +42,120 @@ import textOut
 
 
 class gameState:
-        def __init__(self):
-                self.mode = "Setup"
-                self.board = None
-                self.n = None
-                self.player = "Black"
-                self.captured = {"Black":0,"White":0}
-                self.passCount = 0
-                self.screenHeight = 650
-                self.textOut = False
-                self.buttons = []
-        def set_n(self,n):
-                self.n = n
-                self.board = rules.go_board(n)
+    def __init__(self):
+        self.mode = "Setup"
+        self.board = None
+        self.n = None
+        self.player = "Black"
+        self.captured = {"Black":0,"White":0}
+        self.passCount = 0
+        self.screenHeight = 650
+        self.textOut = False
+        self.buttons = []
+    def set_n(self,n):
+        self.n = n
+        self.board = rules.go_board(n)
 
 
 
 
 def snapMouse(n,screenHeight,pos):
-  delta = screenHeight/n
-	if pos[0] >0 and pos[0] < n*delta and pos[1] >0 and pos[1] < n*delta:
-		return (int(delta*(int(pos[0]/delta)+0.5)),int(delta*(int(pos[1]/delta)+0.5)+0.5))
-	else:
-		return pos
+    delta = screenHeight/n
+    if pos[0] >0 and pos[0] < n*delta and pos[1] >0 and pos[1] < n*delta:
+        return (int(delta*(int(pos[0]/delta)+0.5)),int(delta*(int(pos[1]/delta)+0.5)+0.5))
+    else:
+        return pos
 
 
 def onGrid(n,screenHeight,pos):
-        delta = screenHeight/n
-        if pos[0] >0 and pos[0] < n*delta and pos[1] >0 and pos[1] < n*delta:
-                return True
-        return False
+    delta = screenHeight/n
+    if pos[0] >0 and pos[0] < n*delta and pos[1] >0 and pos[1] < n*delta:
+            return True
+    return False
 
 def gridPosition(n,screenHeight,pos):
-        delta = screenHeight/n
-        return (int(pos[1]/delta),int(pos[0]/delta))
+    delta = screenHeight/n
+    return (int(pos[1]/delta),int(pos[0]/delta))
 
 
 class button:
 #a rectangular button        
-        def __init__(self,text,(x,y),(w,h),colour ,function):
-                self.text = text
-                self.colour = colour
+    def __init__(self,text,(x,y),(w,h),colour ,function):
+        self.text = text
+        self.colour = colour
 #position of top left corner                
-                self.pos = (x,y)
-                self.size = (w,h)
-                self.function = function
-        def changePos(self,newX=None,newY=None):
-		if newX == None:
-			newX = self.pos[0]
-		if newY == None:
-			newY = self.pos[1]
-		self.pos = (newX,newY)
-        def changeSize(self,newW=None,newH=None):
-		if newW == None:
-			newW = self.size[0]
-		if newH == None:
-			newH = self.size[1]
-		self.pos = (newW,newH)
-	def isOn(self,(x,y)):
-                if x > self.pos[0] and x < self.pos[0] + self.size[0]:
-                        if y > self.pos[1] and y < self.pos[1] + self.size[1]:
-                                return True
-                return False
+        self.pos = (x,y)
+        self.size = (w,h)
+        self.function = function
+        
+    def changePos(self,newX=None,newY=None):
+        if newX == None:
+            newX = self.pos[0]
+        if newY == None:
+            newY = self.pos[1]
+        self.pos = (newX,newY)
+        
+    def changeSize(self,newW=None,newH=None):
+        if newW == None:
+            newW = self.size[0]
+        if newH == None:
+            newH = self.size[1]
+        self.pos = (newW,newH)
+            
+    def isOn(self,(x,y)):
+        if x > self.pos[0] and x < self.pos[0] + self.size[0]:
+            if y > self.pos[1] and y < self.pos[1] + self.size[1]:
+                return True
+        return False
 
-	
+    
 def setupGame():
 
-        state = gameState()
+    state = gameState()
 
 
+    
+    if (raw_input("Test mode? ") == "Yes"):
+        state.set_n(9)
         
-        if (raw_input("Test mode? ") == "Yes"):
-                state.set_n(9)
-                
-                state.screenHeight = 650
-                state.board.play("Black",state.captured,(1,0))
-                state.board.play("Black",state.captured,(1,1))
-                state.board.play("Black",state.captured,(1,2))
-                state.board.play("Black",state.captured,(0,2))
-                
-                state.board.play("White",state.captured,(2,0))
-                state.board.play("White",state.captured,(2,1))
-                state.board.play("White",state.captured,(2,2))
-                state.board.play("White",state.captured,(0,3))
-                state.board.play("White",state.captured,(1,3))
-                state.board.play("White",state.captured,(0,0))
-                state.textOut = True
-
-                state.mode = "Game"
-                return state
-                
-
-        n = 0
-        while n not in [5,9,13,19]:
-                n = int(input("Pick a board size out of 5,9,13 or 19: "))
-
-        state.screenHeight = int(input("Pick how large you want the game screen to be: "))
-        state.set_n(n)
+        state.screenHeight = 650
+        state.board.play("Black",state.captured,(1,0))
+        state.board.play("Black",state.captured,(1,1))
+        state.board.play("Black",state.captured,(1,2))
+        state.board.play("Black",state.captured,(0,2))
+        
+        state.board.play("White",state.captured,(2,0))
+        state.board.play("White",state.captured,(2,1))
+        state.board.play("White",state.captured,(2,2))
+        state.board.play("White",state.captured,(0,3))
+        state.board.play("White",state.captured,(1,3))
+        state.board.play("White",state.captured,(0,0))
+        state.textOut = True
 
         state.mode = "Game"
         return state
+            
+
+    n = 0
+    while n not in [5,9,13,19]:
+        n = int(input("Pick a board size out of 5,9,13 or 19: "))
+
+    state.screenHeight = int(input("Pick how large you want the game screen to be: "))
+    state.set_n(n)
+
+    state.mode = "Game"
+    return state
 
 
 def buttonFunctions(b,screen, state, pos):
-        if b.function == "Pass":
-                state.passCount += 1
-                if state.player == "White":
-                        state.player = "Black"
-                else:
-                        state.player = "White"
-                if state.passCount == 3:
-                        gameMode = "End game."
+    if b.function == "Pass":
+        state.passCount += 1
+        if state.player == "White":
+            state.player = "Black"
+        else:
+            state.player = "White"
+        if state.passCount == 3:
+            gameMode = "End game."
                         
 
 

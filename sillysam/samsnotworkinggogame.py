@@ -58,7 +58,15 @@ class TickEvent(Event):
 class QuitEvent(Event):
     def __init__(self):
         self.name = "Program Quit Event"
+
+class MouseClickEvent(event):
+    def __init__(self, coords):
+        self.name = "Mouse Click Event"
+        self.coords = coords
         
+    def getCoords(self):
+        return self.coords
+
 class BoardBuiltEvent(Event):
     def __init__(self, gameBoard):
         self.name = "Board Finished Building Event"
@@ -132,24 +140,13 @@ class InputController(Controller):
         if isinstance(event, TickEvent):
             for event in pygame.event.get():
                 newEvent = None
-                if event.type == KEYDOWN \
-                    and event.key == K_ESCAPE:
-                        newEvent = QuitEvent()
-                elif event.type == KEYDOWN \
-                    and event.key == K_UP:
-                        newEvent = CursorMoveRequest(DIRECTION_UP)
-                elif event.type == KEYDOWN \
-                    and event.key == K_DOWN:
-                        newEvent = CursorMoveRequest(DIRECTION_DOWN)
-                elif event.type == KEYDOWN \
-                    and event.key == K_LEFT:
-                        newEvent = CursorMoveRequest(DIRECTION_LEFT)
-                elif event.type == KEYDOWN \
-                    and event.key == K_RIGHT:
-                        newEvent = CursorMoveRequest(DIRECTION_RIGHT)
-                elif event.type == KEYDOWN \
-                    and event.key == K_RETURN:
-                        newEvent = CursorSelectRequest()
+                if event.type == 
+                
+                if event.type == pygame.QUIT:
+                    newEvent = QuitEvent()
+                
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    newEvent = MouseClickEvent(pygame.mouse.get_pos())
                 
                 if newEvent:
                     self.eventManager.Post(newEvent)
@@ -186,7 +183,7 @@ class EventManager:
     def Post(self, event):
         """Post a new event.  It will be broadcast to all listeners"""
         if not isinstance(event, TickEvent):
-            Debug("     Message: " + event.name)
+            Debug("     Message: " + event.getName())
         for listener in self.listeners.keys():
             listener.Notify(event)
             

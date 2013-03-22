@@ -12,10 +12,10 @@ if not pygame.mixer: print 'Warning, sound disabled'
 # -------------------------------------------------------------------------------------------
 
 BOARDER_SIZE = 0
-SQUARE_SIZE = 30
-GAME_SIZE = 19
+SQUARE_SIZE = 50
+GAME_SIZE = 9
 
-WHITE = (255,255,255)
+BOARD_COLOUR = (255,219,112)
 
 # UTILITIES ---------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------
@@ -356,6 +356,14 @@ class Rules:
             
             return False, group
     
+    def getEnemy(self, state):
+        if state == 'white':
+            return 'black'
+        elif state == 'black':
+            return 'white'
+        else:
+            return None
+    
     def Kills(self, currentPoint, points):
         killgroup = set()
         for neighbor in self.getEnemyNeighbors(currentPoint):
@@ -371,7 +379,20 @@ class Rules:
                         point.state = None
                         score += 1
             
-            return True, score
+            gameState = []
+            for point in points:
+                gameState.append(point.state)
+                
+            if gameState in self.previousStates:
+                oldState = getEnemy(playPoint.state)
+                playPoint.state = None
+                for point in points:
+                    if deadpoint == point:
+                        point.state = oldState
+                return False, 0
+            else:
+                self.previousStates.append(gameState)
+                return True, score
         
         else:
             return False, 0         
@@ -391,16 +412,10 @@ class Rules:
             playPoint.state = colour
         else:
             return False, 0
-            
-        gameState = []
-        for point in points:
-            gameState.append(point.state)
-            
-        if gameState in self.previousStates:
-            playPoint.state = None
-            return False, 0
-        else:
-            self.previousStates.append(gameState)
+        
+        #causes error if snapback... gamestate should be evalutated after kills
+        
+
         
         killedSomething, score = self.Kills(playPoint, points)
         
@@ -520,7 +535,7 @@ class PygameView:
         pygame.display.set_caption('My Go Game')
         
         self.background = pygame.Surface(self.window.get_size())
-        self.background.fill(WHITE)
+        self.background.fill(BOARD_COLOUR)
         
         self.boardSprites = pygame.sprite.RenderUpdates()
         self.pieceSprites = pygame.sprite.RenderUpdates()

@@ -105,7 +105,8 @@ class PointBuiltEvent(Event):
         self.point = point
         
 class Request(Event):
-    """the same as a event.
+    """the same as a event. I figured I might eventually split functionality between requests and events.
+    The events are notifications that something has happened where requests are ... 
     """
     def __init__(self):
         self.name = "Generic Request"
@@ -130,13 +131,17 @@ class PlayerMovedEvent(Event):
 
 class Controller:
     """this is a superclass for any controller that might be generated. 
-    It ensures automatic registrations to the event manager
+    It ensures automatic registrations to the event manager.
     """
     def __init__(self, eventManager):
         self.eventManager = eventManager
         self.eventManager.RegisterListener(self)
 
 class InputController(Controller):
+    """every tick event this controller is checked to see if an input has
+    been stored on the pygame.event stack and respondes apprioptiatly
+    by creating an event
+    """
     def Notify(self, event):
         if isinstance(event, TickEvent):
             for event in pygame.event.get():
@@ -152,6 +157,8 @@ class InputController(Controller):
                     self.eventManager.Post(newEvent)
 
 class ClockController(Controller):
+    """effectivly the main loop
+    """
     def Start(self):
         self.keepGoing = True
         while self.keepGoing:
@@ -179,7 +186,7 @@ class GoGame:
         self.state = GoGame.STATE_PREPARING
         self.size = gameSize
         
-        self.players =  [Player(eventManager, colour="black"),Player(eventManager, colour="white", startScore=Komi)]
+        self.players =  [Player(eventManager, colour="black"),Player(eventManager, colour="white", startScore=Komi)] # A list with the white/black players
         
         if 'black' == goesFirst:
             self.currentPlayer = self.players[0]
@@ -188,7 +195,7 @@ class GoGame:
         else:
             raise Error
         
-        self.map = Map(eventManager)
+        self.map = Map(eventManager, self.size)
         
     def SwitchPlayers(self):
         for player in self.players:
@@ -220,7 +227,7 @@ class Map:
     STATE_PREPARING = False
     STATE_BUILT = True
 
-    def __init__(self, eventManager, size=9):
+    def __init__(self, eventManager, size):
         self.eventManager = eventManager
         self.eventManager.RegisterListener(self)
         
@@ -238,7 +245,7 @@ class Map:
         self.size = size
         rows = columns = range(self.size)
         
-        #indexing from topright corner
+        #indexing from topleft corner
         for x in rows:
             if x == max(rows):    
                 position1 = 'Right'
@@ -260,9 +267,11 @@ class Map:
                 else:          
                     position2 = ''
                     
-                position = position2 + position1
+                position = position2 + position1    
                 newPoint = Point(self.eventManager, (x,y), position)
-                self.points.append(newPoint)
+                #for every x,y posistion a new 'Point' is intialised, and is passed if it is an edge/corner/midboard and if so which.
+                #i.e. 'TopRight' is the topright corner, 'Top' would be the top edge and '' would be any midboard position
+                self.points.append(newPoint) #saves the point into a list of points
         
 
         for point in self.points:
@@ -275,6 +284,9 @@ class Map:
         self.eventManager.Post(MapBuiltEvent(self))
         
     def getPoint(self, coord, direction=None):
+        """this function allows you to ask the board for a spesific point
+        or a spesific points neighbor
+        """
         if direction == 'up':
             coord = (coord[0],coord[1]-1)
         elif direction == 'down':
@@ -295,9 +307,10 @@ class Map:
             RMS = 0
             for n in range(2):
 
-                RMS += abs(coord[n]-point.graphics.coord[n])
+                RMS += abs(coord[n]-point.graphics.coord[n])    #for every point takes the dinstance from the x and y coordinate given and stores the sum.
                 
-            pointDistance.append(RMS)
+                
+            pointDistance.append(RMS) #because of symitery in the grid the RMS values will be ranked in the correct order
 
         closestPoint = self.points[pointDistance.index(min(pointDistance))]
         return closestPoint
@@ -308,7 +321,7 @@ class Map:
                 self.Build()
             
         elif isinstance(event, PlayerMoveRequest):
-            #updates the gamestate
+            #updates the gamestate. Applies the rules to see if a move has been made.
             hasChanged, score = self.rules.applyRules(self.points, event.point, event.colour, self.previousStates)
             if hasChanged:
                 self.eventManager.Post(PlayerMovedEvent(score))
@@ -370,32 +383,39 @@ class Rules:
             alive, group = self.isAlive(neighbor, points, set())
             if not alive:
                 killgroup = killgroup.union(group)
-
+        """looks at the neighbors of the stone in question, if a neighbor is of the opposite colour checks if it is alive if a move is played in the current square.
+        if the neighbors are dead it add it to a set called 'killgroup' which are marked to be removed.
+        """
+        
         score = 0
         if len(killgroup)>0:
             for deadpoint in killgroup:
                 for point in points:
-                    if deadpoint == point:
-                        point.state = None
+                    if deadpoint == point:  
+                        point.state = None  #for each stone in the killgroup remove it and add a point to the current player
                         score += 1
+           
+        gameState = []
+        for point in points:
+            gameState.append(point.state)
+        
+        if len(killgroup)==0:
+            self.previousStates.append(gameState) #if the state did not already exist mark it as existing.
+            return False, 0  
             
-            gameState = []
-            for point in points:
-                gameState.append(point.state)
-                
-            if gameState in self.previousStates:
-                oldState = getEnemy(playPoint.state)
-                playPoint.state = None
+        if gameState in self.previousStates:
+            oldState = self.getEnemy(currentPoint.state)
+            currentPoint.state = None
+            for deadpoint in killgroup:
                 for point in points:
                     if deadpoint == point:
                         point.state = oldState
-                return False, 0
-            else:
-                self.previousStates.append(gameState)
-                return True, score
-        
+            return False, 0 #A badly implimented co rule                
+            
         else:
-            return False, 0         
+            self.previousStates.append(gameState) #if the state did not already exist mark it as existing.
+            return True, score
+       
     
     def isEmpty(self, point):
         if point.state == None:
@@ -408,27 +428,23 @@ class Rules:
         board + an int for the score
         """
         
-        if self.isEmpty(playPoint):
-            playPoint.state = colour
+        if self.isEmpty(playPoint): 
+            playPoint.state = colour #if the point is empty it plays the move and then checks to see if it breaks any rules 
         else:
             return False, 0
-        
-        #causes error if snapback... gamestate should be evalutated after kills
-        
-
-        
-        killedSomething, score = self.Kills(playPoint, points)
+   
+        killedSomething, score = self.Kills(playPoint, points) #checks if anything has been killed
         
         if killedSomething:
-            return True, score
+            return True, score #if it has the move is legal
         
-        stillAlive, score = self.isAlive(playPoint, points, set())
+        stillAlive, score = self.isAlive(playPoint, points, set()) #else checks if the stones are alive anyway
         
         if stillAlive:
-            return True, 0
+            return True, 0 #returns
             
         else:
-            playPoint.state = None
+            playPoint.state = None #undoes the move and returns
             return False, 0
             
                 
@@ -479,6 +495,9 @@ class Player:
 
 class BoardSprite(pygame.sprite.Sprite):
     def __init__(self, point, group=None):
+        """creates a board square for every coordinate. The posistion of the point it is linked to
+        spesifies the image that should be used
+        """
         pygame.sprite.Sprite.__init__(self, group)
         
         self.point = point
@@ -491,6 +510,10 @@ class BoardSprite(pygame.sprite.Sprite):
 
 class PieceSprite(pygame.sprite.Sprite):
     def __init__(self, point, group=None):
+        """loads 3 images and saves them to be rotated upon the change in state
+        of the point it is linked to. Updates the image whenever a move is played.
+        """
+        
         pygame.sprite.Sprite.__init__(self, group)
         
         self.state = None
@@ -531,36 +554,36 @@ class PygameView:
         
         windowSize = BOARDER_SIZE+SQUARE_SIZE*boardSize
         
-        self.window = pygame.display.set_mode((windowSize,windowSize))
+        self.window = pygame.display.set_mode((windowSize,windowSize)) #creates a window based on the size of the game
         pygame.display.set_caption('My Go Game')
         
-        self.background = pygame.Surface(self.window.get_size())
+        self.background = pygame.Surface(self.window.get_size()) #fills the window with the game surface
         self.background.fill(BOARD_COLOUR)
         
-        self.boardSprites = pygame.sprite.RenderUpdates()
+        self.boardSprites = pygame.sprite.RenderUpdates() #creates a render group. All sprites are saved in this group and can be refreshed by updating the group
         self.pieceSprites = pygame.sprite.RenderUpdates()
         
     def Notify(self, event):
         if isinstance(event, TickEvent):
-            self.boardSprites.clear(self.window, self.background)
-            self.pieceSprites.clear(self.window, self.background)
+            self.boardSprites.clear(self.window, self.background) #every tick, clear the groups.
+            self.pieceSprites.clear(self.window, self.background) #both to display the background colour and get rid of any removed pieces
             
-            self.boardSprites.update()
+            self.boardSprites.update() #update the groups. Refreshing every item in the group
             self.pieceSprites.update()
             
-            dirtyRects1 = self.boardSprites.draw(self.window)
+            dirtyRects1 = self.boardSprites.draw(self.window) # create a rectangle over any sprites which have changed.
             dirtyRects2 = self.pieceSprites.draw(self.window)
             
-            dirtyRects = dirtyRects1 + dirtyRects2
+            dirtyRects = dirtyRects1 + dirtyRects2 # order is important, they will be refreshed in order.
             
-            pygame.display.update(dirtyRects)
+            pygame.display.update(dirtyRects) #refreshes the screen
             
         elif isinstance(event, MapBuiltEvent):
             pass
             
         elif isinstance(event, PointBuiltEvent):
-            BoardSprite(event.point, self.boardSprites)
-            PieceSprite(event.point, self.pieceSprites)
+            BoardSprite(event.point, self.boardSprites) #everytime a point is built a corresponding board graphics is made for it
+            PieceSprite(event.point, self.pieceSprites) #and piece graphics too!
 
 
 # MAIN --------------------------------------------------------------------------------------
@@ -568,7 +591,7 @@ class PygameView:
     
 def main():
     eventManager = EventManager()
-    
+    #initialises the view, model (game) and controllers (clock, mouse)
     clock = ClockController(eventManager)
     mouse = InputController(eventManager)
     game = GoGame(eventManager, GAME_SIZE)
